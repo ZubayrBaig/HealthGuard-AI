@@ -123,6 +123,33 @@ const NORMAL_READINGS = [
 ];
 
 // ---------------------------------------------------------------------------
+// Spike presets for Step 4 (selectable by frontend)
+// ---------------------------------------------------------------------------
+
+const SPIKE_PRESETS = {
+  glucose: {
+    label: 'Glucose Spike',
+    vitals: { heart_rate: 75, blood_pressure_systolic: 122, blood_pressure_diastolic: 80, glucose: 245, oxygen_saturation: 97, temperature: 98.4 },
+  },
+  blood_pressure: {
+    label: 'BP Spike',
+    vitals: { heart_rate: 88, blood_pressure_systolic: 175, blood_pressure_diastolic: 108, glucose: 115, oxygen_saturation: 96, temperature: 98.6 },
+  },
+  heart_rate: {
+    label: 'Heart Rate Spike',
+    vitals: { heart_rate: 155, blood_pressure_systolic: 130, blood_pressure_diastolic: 85, glucose: 112, oxygen_saturation: 95, temperature: 98.8 },
+  },
+  oxygen: {
+    label: 'Low SpO2',
+    vitals: { heart_rate: 92, blood_pressure_systolic: 128, blood_pressure_diastolic: 82, glucose: 110, oxygen_saturation: 89, temperature: 98.4 },
+  },
+  temperature: {
+    label: 'High Temperature',
+    vitals: { heart_rate: 105, blood_pressure_systolic: 125, blood_pressure_diastolic: 80, glucose: 118, oxygen_saturation: 96, temperature: 103.5 },
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Router factory
 // ---------------------------------------------------------------------------
 
@@ -147,7 +174,7 @@ export default function createDemoRouter(io) {
 
   // POST /api/demo/step/:stepNumber — guided demo story beats
   // Steps: 1=Meet Sarah, 2=Connect Devices, 3=Morning Check-in,
-  //        4=Glucose Spike, 5=Smart Alert, 6=AI Risk, 7=Ask Assistant
+  //        4=Vital Spike (configurable), 5=Smart Alert, 6=AI Risk, 7=Ask Assistant
   router.post('/step/:stepNumber', async (req, res) => {
     const stepNum = parseInt(req.params.stepNumber, 10);
     if (stepNum < 1 || stepNum > 7) {
@@ -276,23 +303,18 @@ export default function createDemoRouter(io) {
         });
       }
 
-      // Step 4 — Glucose Spike: single reading with glucose 245
+      // Step 4 — Vital Spike: configurable via spike_type body param
       case 4: {
-        const spikeVitals = {
-          heart_rate: 75,
-          blood_pressure_systolic: 122,
-          blood_pressure_diastolic: 80,
-          glucose: 245,
-          oxygen_saturation: 97,
-          temperature: 98.4,
-        };
-        const reading = insertReading(patient.id, spikeVitals, io);
+        const spikeType = req.body.spike_type || 'glucose';
+        const preset = SPIKE_PRESETS[spikeType] || SPIKE_PRESETS.glucose;
+        const reading = insertReading(patient.id, preset.vitals, io);
         const alerts = await checkVitalsAndAlert(patient.id, reading, io);
         io.emit('vitals-updated', { patientId: patient.id, reading });
 
         return res.json({
           step: 4,
-          message: 'Glucose spike inserted',
+          message: `${preset.label} inserted`,
+          spikeType,
           alertTriggered: alerts.length > 0,
         });
       }

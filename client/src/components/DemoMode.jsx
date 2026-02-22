@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/api';
-import { ChevronRight, ChevronLeft, X, Play, Check, Loader2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, X, Play, Check, Loader2, Droplets, Activity, Heart, Wind, Thermometer } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Story beats
@@ -27,10 +27,11 @@ const STEPS = [
     target: '[data-demo="stat-cards"]',
   },
   {
-    label: 'Glucose Spike',
-    narrator: 'A dangerous glucose reading of 245 mg/dL just arrived...',
+    label: 'Trigger Spike',
+    narrator: 'Choose a vital to spike — pick one to trigger an alert',
     page: '/dashboard',
     target: '[data-demo="stat-cards"]',
+    spikeStep: true,
   },
   {
     label: 'Smart Alert Fires',
@@ -46,11 +47,27 @@ const STEPS = [
   },
   {
     label: 'Ask the Assistant',
-    narrator: 'Ask the AI about the glucose spike — click Send when ready',
+    narrator: 'Ask the AI about the spike — click Send when ready',
     page: '/chat',
     target: null,
   },
 ];
+
+const SPIKE_OPTIONS = [
+  { key: 'glucose', label: 'Glucose', icon: Droplets, color: 'text-orange-400' },
+  { key: 'blood_pressure', label: 'BP', icon: Activity, color: 'text-purple-400' },
+  { key: 'heart_rate', label: 'Heart Rate', icon: Heart, color: 'text-red-400' },
+  { key: 'oxygen', label: 'SpO2', icon: Wind, color: 'text-blue-400' },
+  { key: 'temperature', label: 'Temp', icon: Thermometer, color: 'text-amber-400' },
+];
+
+const SPIKE_CHAT_PREFILLS = {
+  glucose: 'My glucose just spiked to 245. What should I do?',
+  blood_pressure: 'My blood pressure just spiked to 175/108. What should I do?',
+  heart_rate: 'My heart rate just spiked to 155 BPM. What should I do?',
+  oxygen: 'My oxygen saturation just dropped to 89%. What should I do?',
+  temperature: 'My temperature just spiked to 103.5\u00b0F. What should I do?',
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -78,10 +95,12 @@ export default function DemoMode() {
   const [loading, setLoading] = useState(false);
   const [patientId, setPatientId] = useState(null);
   const [started, setStarted] = useState(false);
+  const [chosenSpike, setChosenSpike] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
   const advancingRef = useRef(false);
+  const chosenSpikeRef = useRef(null);
 
   // Fetch patient ID
   useEffect(() => {
@@ -109,7 +128,8 @@ export default function DemoMode() {
     }
 
     // Fire backend action if not already executed
-    if (!executedSteps.has(stepIndex)) {
+    // For spike steps, the POST happens when user picks a spike type
+    if (!executedSteps.has(stepIndex) && !step.spikeStep) {
       try {
         await api.post(`/api/demo/step/${stepIndex + 1}`);
         executedSteps.add(stepIndex);
@@ -128,11 +148,10 @@ export default function DemoMode() {
 
     if (stepIndex === 6) {
       // Step 7: prefill chat input after navigation settles and component mounts
+      const msg = SPIKE_CHAT_PREFILLS[chosenSpikeRef.current] || SPIKE_CHAT_PREFILLS.glucose;
       setTimeout(() => {
         window.dispatchEvent(
-          new CustomEvent('demo-prefill-chat', {
-            detail: 'My glucose just spiked to 245. What should I do?',
-          }),
+          new CustomEvent('demo-prefill-chat', { detail: msg }),
         );
       }, 1200);
     }
@@ -164,6 +183,26 @@ export default function DemoMode() {
 
     advancingRef.current = false;
   }, [currentStep, loading, started, executeStep]);
+
+  // Handle spike choice at Step 4
+  const handleSpikeChoice = useCallback(async (spikeKey) => {
+    setChosenSpike(spikeKey);
+    chosenSpikeRef.current = spikeKey;
+    setLoading(true);
+    try {
+      await api.post('/api/demo/step/4', { spike_type: spikeKey });
+      executedSteps.add(3);
+    } catch {
+      // Continue even if backend fails
+    }
+    setLoading(false);
+    // Auto-advance to next step after a short delay
+    setTimeout(() => {
+      const next = 4; // Step 5 — Smart Alert
+      setCurrentStep(next);
+      executeStep(next);
+    }, 800);
+  }, [executedSteps, executeStep]);
 
   // Go back (UI only, no backend undo)
   const goBack = useCallback(() => {
@@ -267,38 +306,57 @@ export default function DemoMode() {
 
       {/* Controls */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        {/* Back */}
-        {started && (
-          <button
-            onClick={goBack}
-            disabled={isFirstStep || loading}
-            className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 hover:text-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-        )}
+        {started && step.spikeStep && !executedSteps.has(currentStep) ? (
+          /* Spike picker pills */
+          <div className="flex items-center gap-1.5">
+            {SPIKE_OPTIONS.map(({ key, label, icon: SIcon, color }) => (
+              <button
+                key={key}
+                onClick={() => handleSpikeChoice(key)}
+                disabled={loading}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold rounded-lg bg-white/10 text-gray-200 hover:bg-white/20 hover:text-white transition-colors disabled:opacity-40"
+              >
+                <SIcon className={`h-3.5 w-3.5 ${color}`} />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Back */}
+            {started && (
+              <button
+                onClick={goBack}
+                disabled={isFirstStep || loading}
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 hover:text-white rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Back</span>
+              </button>
+            )}
 
-        {/* Next Step */}
-        <button
-          onClick={advanceStep}
-          disabled={loading || (started && isLastStep)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : started && isLastStep ? (
-            <>
-              <Check className="h-3.5 w-3.5" />
-              <span>Done</span>
-            </>
-          ) : (
-            <>
-              <span>{started ? 'Next Step' : 'Start Demo'}</span>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </>
-          )}
-        </button>
+            {/* Next Step */}
+            <button
+              onClick={advanceStep}
+              disabled={loading || (started && isLastStep)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : started && isLastStep ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Done</span>
+                </>
+              ) : (
+                <>
+                  <span>{started ? 'Next Step' : 'Start Demo'}</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </>
+              )}
+            </button>
+          </>
+        )}
 
         {/* Exit */}
         <button
