@@ -24,6 +24,7 @@ import createRiskRouter from './routes/risk.js';
 import createDemoRouter from './routes/demo.js';
 import createChatRouter from './routes/chat.js';
 import createAuthRouter from './routes/auth.js';
+import createDevicesRouter from './routes/devices.js';
 import { requireAuth, extractUser } from './middleware/auth.js';
 
 const app = express();
@@ -75,6 +76,7 @@ app.use('/api/alerts', createAlertsRouter());
 app.use('/api/vitals', createVitalsRouter(io));
 app.use('/api/risk', createRiskRouter());
 app.use('/api/chat', createChatRouter());
+app.use('/api/devices', createDevicesRouter(io));
 
 // Serve client build in production
 const clientDist = join(__dirname, '..', 'client', 'dist');

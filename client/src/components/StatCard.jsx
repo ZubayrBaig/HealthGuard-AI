@@ -1,4 +1,13 @@
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Watch, Activity as ActivityIcon, HeartPulse, CircleDot, Droplets, Mountain } from 'lucide-react';
+
+const DEVICE_ICON_MAP = {
+  watch: Watch,
+  activity: ActivityIcon,
+  'heart-pulse': HeartPulse,
+  'circle-dot': CircleDot,
+  droplets: Droplets,
+  mountain: Mountain,
+};
 
 const STATUS_THRESHOLDS = {
   heart_rate: [
@@ -74,6 +83,8 @@ export default function StatCard({
   primaryValue,
   secondaryVitalKey,
   secondaryValue,
+  source,
+  supportedDevices,
 }) {
   // Determine status — for BP, check both and take worst
   let status = getStatus(vitalKey, primaryValue ?? value);
@@ -107,6 +118,15 @@ export default function StatCard({
           {value != null ? value : '—'}
         </span>
         <span className="text-sm text-gray-500">{unit}</span>
+        {source && source !== 'manual' && source !== 'simulated' && source !== 'demo' && supportedDevices?.[source] && (() => {
+          const dev = supportedDevices[source];
+          const DevIcon = DEVICE_ICON_MAP[dev.icon] || Watch;
+          return (
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-medium text-gray-400" title={`From ${dev.name}`}>
+              <DevIcon className="h-3 w-3" style={{ color: dev.color }} />
+            </span>
+          );
+        })()}
       </div>
       <div className="flex items-center gap-1.5">
         <span className={`h-2 w-2 rounded-full ${STATUS_DOT[status]}`} />

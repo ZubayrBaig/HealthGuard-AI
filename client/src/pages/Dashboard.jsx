@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../utils/api';
 import { io as socketIO } from 'socket.io-client';
-import { Heart, Activity, Droplets, Wind, Moon, RefreshCw } from 'lucide-react';
+import { Heart, Activity, Droplets, Wind, Moon, RefreshCw, Watch, HeartPulse, CircleDot, Mountain, Plus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
 import DashboardSkeleton from '../components/DashboardSkeleton';
 import StatCard from '../components/StatCard';
 import RiskScoreGauge from '../components/RiskScoreGauge';
@@ -11,6 +12,53 @@ import VitalsTrendChart from '../components/VitalsTrendChart';
 import RecentAlerts from '../components/RecentAlerts';
 
 const POLL_INTERVAL_MS = 30_000;
+
+const DEVICE_ICON_MAP = {
+  watch: Watch,
+  activity: Activity,
+  'heart-pulse': HeartPulse,
+  'circle-dot': CircleDot,
+  droplets: Droplets,
+  mountain: Mountain,
+};
+
+// ---------------------------------------------------------------------------
+// Connected Devices strip — shown below stat cards
+// ---------------------------------------------------------------------------
+
+function ConnectedDevicesStrip({ devices, supported }) {
+  const active = devices.filter((d) => d.status === 'connected' || d.status === 'syncing');
+  if (!active.length && !Object.keys(supported).length) return null;
+
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <span className="text-xs font-medium text-gray-500">Devices</span>
+      {active.map((d) => {
+        const config = supported[d.device_type];
+        const DevIcon = DEVICE_ICON_MAP[config?.icon] || Watch;
+        const color = config?.color || '#6b7280';
+        return (
+          <Link
+            key={d.id}
+            to="/devices"
+            className="relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <DevIcon className="h-3.5 w-3.5" style={{ color }} />
+            {d.device_name}
+            <span className={`h-2 w-2 rounded-full ${d.status === 'syncing' ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`} />
+          </Link>
+        );
+      })}
+      <Link
+        to="/devices"
+        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-dashed border-gray-300 text-xs font-medium text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors"
+      >
+        <Plus className="h-3 w-3" />
+        Add
+      </Link>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Section reveal wrapper — shows skeleton until loaded, then fades in content
@@ -116,6 +164,10 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [patientId, setPatientId] = useState(null);
 
+  // Devices
+  const [connectedDevices, setConnectedDevices] = useState([]);
+  const [supportedDevices, setSupportedDevices] = useState({});
+
   // Phase 2: independent section data (null = loading)
   const [latestVitals, setLatestVitals] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -208,6 +260,17 @@ export default function Dashboard() {
         setAiInsightsLoading(false);
       })
       .catch(() => setAiInsightsLoading(false));
+
+    // Connected devices
+    Promise.all([
+      api.get(`/api/devices/${patientId}`),
+      api.get('/api/devices/supported'),
+    ])
+      .then(([devRes, supRes]) => {
+        setConnectedDevices(devRes.data);
+        setSupportedDevices(supRes.data);
+      })
+      .catch(() => {});
   }, [patientId]);
 
   // Re-fetch chart data when range changes (after initial load)
@@ -279,6 +342,14 @@ export default function Dashboard() {
     socket.on('new-alert', ({ alert }) => {
       if (alert) {
         setAlerts((prev) => prev ? [alert, ...prev].slice(0, 5) : [alert]);
+      }
+    });
+
+    socket.on('device-status-change', (data) => {
+      if (data.patientId === patientId) {
+        api.get(`/api/devices/${patientId}`)
+          .then((r) => setConnectedDevices(r.data))
+          .catch(() => {});
       }
     });
 
@@ -386,6 +457,8 @@ export default function Dashboard() {
             trend={summary?.heart_rate?.trend}
             icon={Heart}
             accentColor="red"
+            source={latestVitals?.source}
+            supportedDevices={supportedDevices}
           />
           <StatCard
             label="Blood Pressure"
@@ -402,6 +475,8 @@ export default function Dashboard() {
             trend={summary?.blood_pressure_systolic?.trend}
             icon={Activity}
             accentColor="purple"
+            source={latestVitals?.source}
+            supportedDevices={supportedDevices}
           />
           <StatCard
             label="Blood Glucose"
@@ -411,6 +486,8 @@ export default function Dashboard() {
             trend={summary?.glucose?.trend}
             icon={Droplets}
             accentColor="orange"
+            source={latestVitals?.source}
+            supportedDevices={supportedDevices}
           />
           <StatCard
             label="SpO2"
@@ -420,6 +497,8 @@ export default function Dashboard() {
             trend={summary?.oxygen_saturation?.trend}
             icon={Wind}
             accentColor="blue"
+            source={latestVitals?.source}
+            supportedDevices={supportedDevices}
           />
           <StatCard
             label="Sleep"
@@ -429,9 +508,14 @@ export default function Dashboard() {
             trend={summary?.sleep_hours?.trend}
             icon={Moon}
             accentColor="indigo"
+            source={latestVitals?.source}
+            supportedDevices={supportedDevices}
           />
         </div>
       </SectionReveal>
+
+      {/* Connected Devices Strip */}
+      <ConnectedDevicesStrip devices={connectedDevices} supported={supportedDevices} />
 
       {/* MIDDLE ROW: Risk Score + Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

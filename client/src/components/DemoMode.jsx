@@ -15,6 +15,12 @@ const STEPS = [
     target: null,
   },
   {
+    label: 'Connect Devices',
+    narrator: 'Pairing Apple Watch and Dexcom G7 — watch the devices connect in real-time',
+    page: '/devices',
+    target: null,
+  },
+  {
     label: 'Morning Check-in',
     narrator: 'Normal morning vitals are streaming in — watch the stat cards update',
     page: '/dashboard',
@@ -113,15 +119,15 @@ export default function DemoMode() {
     }
 
     // Special handling per step
-    if (stepIndex === 4 && patientId) {
-      // Step 5: trigger risk refresh on dashboard
+    if (stepIndex === 5 && patientId) {
+      // Step 6: trigger risk refresh on dashboard
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('demo-refresh-risk'));
       }, 500);
     }
 
-    if (stepIndex === 5) {
-      // Step 6: prefill chat input after navigation settles
+    if (stepIndex === 6) {
+      // Step 7: prefill chat input after navigation settles
       setTimeout(() => {
         window.dispatchEvent(
           new CustomEvent('demo-prefill-chat', {

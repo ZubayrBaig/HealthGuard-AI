@@ -15,6 +15,7 @@ import Vitals from './pages/Vitals';
 import Chat from './pages/Chat';
 import Alerts from './pages/Alerts';
 import Profile from './pages/Profile';
+import Devices from './pages/Devices';
 
 export default function App() {
   const { isLoading } = useAuth();
@@ -94,6 +95,7 @@ function AppContent() {
               <Route path="/vitals" element={<Vitals />} />
               <Route path="/chat" element={<Chat />} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route path="/devices" element={<Devices />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

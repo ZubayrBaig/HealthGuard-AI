@@ -74,6 +74,25 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_chat_patient_created
     ON chat_history(patient_id, created_at);
+
+  CREATE TABLE IF NOT EXISTS connected_devices (
+    id TEXT PRIMARY KEY,
+    patient_id TEXT NOT NULL,
+    device_type TEXT NOT NULL,
+    device_name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+      CHECK (status IN ('connected', 'syncing', 'disconnected', 'pending')),
+    last_sync_at TEXT,
+    battery_level INTEGER,
+    firmware_version TEXT,
+    settings TEXT DEFAULT '{}',
+    connected_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_devices_patient
+    ON connected_devices(patient_id);
 `);
 
 // Migration: add columns for existing databases that lack them

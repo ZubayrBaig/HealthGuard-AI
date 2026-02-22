@@ -276,6 +276,32 @@ export function seedDb() {
         def.acknowledged, captured.timestamp,
       );
     }
+
+    // ---- Pre-connected wearable devices ----
+    const deviceStmt = db.prepare(`
+      INSERT INTO connected_devices
+        (id, patient_id, device_type, device_name, status, battery_level,
+         firmware_version, settings, connected_at, last_sync_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const deviceConnectedAt = formatTimestamp(new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000)); // 2 days ago
+    const deviceSyncAt = formatTimestamp(new Date(now.getTime() - 30 * 60 * 1000)); // 30 min ago
+    const deviceCreatedAt = deviceConnectedAt;
+
+    // Apple Watch
+    deviceStmt.run(
+      uuidv4(), patientId, 'apple_watch', 'Apple Watch Series 9',
+      'connected', 82, '10.3.1', '{}',
+      deviceConnectedAt, deviceSyncAt, deviceCreatedAt,
+    );
+
+    // Dexcom G7
+    deviceStmt.run(
+      uuidv4(), patientId, 'dexcom', 'Dexcom G7',
+      'connected', 91, '1.8.2', '{}',
+      deviceConnectedAt, deviceSyncAt, deviceCreatedAt,
+    );
   });
 
   seed();

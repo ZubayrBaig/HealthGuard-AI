@@ -1,6 +1,15 @@
-import { useState } from 'react';
-import { X, Check, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Check, Loader2, Watch, Activity, HeartPulse, CircleDot, Droplets, Mountain, Info } from 'lucide-react';
 import api from '../utils/api';
+
+const DEVICE_ICON_MAP = {
+  watch: Watch,
+  activity: Activity,
+  'heart-pulse': HeartPulse,
+  'circle-dot': CircleDot,
+  droplets: Droplets,
+  mountain: Mountain,
+};
 
 const FIELDS = [
   { key: 'heart_rate', label: 'Heart Rate (BPM)', min: 30, max: 220, step: 1, placeholder: 'e.g. 72' },
@@ -20,6 +29,22 @@ export default function LogVitalsModal({ isOpen, onClose, patientId, onSuccess }
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [activeDevices, setActiveDevices] = useState([]);
+
+  useEffect(() => {
+    if (!isOpen || !patientId) return;
+    Promise.all([
+      api.get(`/api/devices/${patientId}`),
+      api.get('/api/devices/supported'),
+    ])
+      .then(([devRes, supRes]) => {
+        const connected = devRes.data
+          .filter((d) => d.status === 'connected' || d.status === 'syncing')
+          .map((d) => ({ ...d, config: supRes.data[d.device_type] }));
+        setActiveDevices(connected);
+      })
+      .catch(() => {});
+  }, [isOpen, patientId]);
 
   if (!isOpen) return null;
 
@@ -88,6 +113,28 @@ export default function LogVitalsModal({ isOpen, onClose, patientId, onSuccess }
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
+          {activeDevices.length > 0 && (
+            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-blue-50 border border-blue-100">
+              <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs text-blue-700">
+                  Connected devices sync automatically. Manual entry is for readings from non-connected devices.
+                </p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  {activeDevices.map((d) => {
+                    const DevIcon = DEVICE_ICON_MAP[d.config?.icon] || Watch;
+                    return (
+                      <span key={d.id} className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600">
+                        <DevIcon className="h-3 w-3" style={{ color: d.config?.color }} />
+                        {d.device_name}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           <p className="text-sm text-gray-500">
             Enter any vitals you want to log. All fields are optional.
           </p>

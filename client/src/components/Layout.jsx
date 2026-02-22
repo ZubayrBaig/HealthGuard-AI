@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { io as socketIO } from 'socket.io-client';
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import {
   HeartPulse,
@@ -6,6 +7,7 @@ import {
   Heart,
   MessageCircle,
   Bell,
+  Smartphone,
   User,
   Menu,
   X,
@@ -13,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useNotification } from '../context/NotificationContext';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 import PageTransition from './PageTransition';
 import DemoMode from './DemoMode';
 
@@ -21,13 +24,15 @@ const NAV_ITEMS = [
   { to: '/vitals', label: 'Vitals', icon: Heart },
   { to: '/chat', label: 'AI Assistant', icon: MessageCircle },
   { to: '/alerts', label: 'Alerts', icon: Bell, useBadge: true },
+  { to: '/devices', label: 'Devices', icon: Smartphone, useDeviceBadge: true },
   { to: '/profile', label: 'Profile', icon: User },
 ];
 
 export default function Layout() {
-  const { unreadCount, hasCritical, patientName } = useNotification();
-  const { user, isDemoMode, logout } = useAuth();
+  const { unreadCount, hasCritical, patientName, patientId } = useNotification();
+  const { user, isDemoMode, logout, exitDemoMode } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [deviceCount, setDeviceCount] = useState(0);
   const location = useLocation();
 
   // Close sidebar on route change
@@ -35,9 +40,30 @@ export default function Layout() {
     setSidebarOpen(false);
   }, [location.pathname]);
 
+  // Fetch connected device count
+  const fetchDeviceCount = useCallback(() => {
+    if (!patientId) return;
+    api.get(`/api/devices/${patientId}`)
+      .then((r) => {
+        setDeviceCount(r.data.filter((d) => d.status === 'connected' || d.status === 'syncing').length);
+      })
+      .catch(() => {});
+  }, [patientId]);
+
+  useEffect(() => { fetchDeviceCount(); }, [fetchDeviceCount]);
+
+  useEffect(() => {
+    if (!patientId) return;
+    const socket = socketIO({ path: '/socket.io' });
+    socket.on('device-status-change', (data) => {
+      if (data.patientId === patientId) fetchDeviceCount();
+    });
+    return () => socket.disconnect();
+  }, [patientId, fetchDeviceCount]);
+
   return (
   <>
-    <div className="flex h-screen overflow-hidden">
+    <div className={`flex overflow-hidden ${isDemoMode ? 'h-[calc(100vh-3rem)]' : 'h-screen'}`}>
       {/* Mobile overlay backdrop */}
       {sidebarOpen && (
         <div
@@ -50,7 +76,7 @@ export default function Layout() {
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] text-white flex flex-col transform transition-transform duration-300 lg:relative lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        }${isDemoMode ? ' pb-4' : ''}`}
       >
         {/* Brand */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
@@ -68,7 +94,7 @@ export default function Layout() {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map(({ to, label, icon: Icon, useBadge }) => (
+          {NAV_ITEMS.map(({ to, label, icon: Icon, useBadge, useDeviceBadge }) => (
             <NavLink
               key={to}
               to={to}
@@ -89,6 +115,11 @@ export default function Layout() {
                   }`}
                 >
                   {unreadCount}
+                </span>
+              )}
+              {useDeviceBadge && deviceCount > 0 && (
+                <span className="ml-auto inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-green-500 text-xs font-semibold text-white">
+                  {deviceCount}
                 </span>
               )}
             </NavLink>
@@ -118,7 +149,15 @@ export default function Layout() {
               )}
             </div>
           </div>
-          {!isDemoMode && (
+            {isDemoMode ? (
+            <button
+              onClick={() => { exitDemoMode(); }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <LogOut className="h-5 w-5 flex-shrink-0" />
+              Exit Demo
+            </button>
+          ) : (
             <button
               onClick={logout}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
@@ -161,14 +200,14 @@ export default function Layout() {
         </header>
 
         {/* Page content */}
-        <main className={`flex-1 overflow-y-auto bg-[#f8fafc] p-4 sm:p-6${import.meta.env.DEV ? ' pb-16' : ''}`}>
+        <main className="flex-1 overflow-y-auto bg-[#f8fafc] p-4 sm:p-6">
           <PageTransition>
             <Outlet />
           </PageTransition>
         </main>
       </div>
     </div>
-    {import.meta.env.DEV && <DemoMode />}
+    {isDemoMode && <DemoMode />}
   </>
   );
 }
