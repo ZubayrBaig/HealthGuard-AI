@@ -1,12 +1,19 @@
 import OpenAI from 'openai';
 
-const client = new OpenAI({
-  apiKey: process.env.FEATHERLESS_API_KEY,
-  baseURL: process.env.FEATHERLESS_BASE_URL,
-});
+let _client = null;
+
+function getClient() {
+  if (!_client) {
+    _client = new OpenAI({
+      apiKey: process.env.FEATHERLESS_API_KEY || 'dummy',
+      baseURL: process.env.FEATHERLESS_BASE_URL,
+    });
+  }
+  return _client;
+}
 
 export async function chatCompletion(messages, options = {}) {
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: process.env.FEATHERLESS_MODEL,
     messages,
     ...options,
@@ -15,4 +22,4 @@ export async function chatCompletion(messages, options = {}) {
   return response;
 }
 
-export default client;
+export default getClient;

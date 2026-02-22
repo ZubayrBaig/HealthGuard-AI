@@ -1,1 +1,108 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@utility animate-toast-in {
+  animation: toast-slide-in 0.3s ease-out;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@utility animate-page-in {
+  animation: page-fade-in 0.25s ease-out;
+}
+
+/* Markdown styles for chat assistant messages */
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.chat-markdown h1 { font-size: 1.05rem; }
+.chat-markdown h2 { font-size: 1rem; }
+.chat-markdown h3 { font-size: 0.95rem; }
+
+.chat-markdown p {
+  margin-bottom: 0.5rem;
+}
+.chat-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.chat-markdown ul,
+.chat-markdown ol {
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
+}
+.chat-markdown ul { list-style-type: disc; }
+.chat-markdown ol { list-style-type: decimal; }
+.chat-markdown li { margin-bottom: 0.125rem; }
+
+.chat-markdown strong { font-weight: 600; }
+.chat-markdown em { font-style: italic; }
+
+.chat-markdown code {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.8em;
+}
+
+.chat-markdown pre {
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+}
+.chat-markdown pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.chat-markdown a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.chat-markdown blockquote {
+  border-left: 3px solid #d1d5db;
+  padding-left: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.chat-markdown table {
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+  font-size: 0.85em;
+}
+.chat-markdown th,
+.chat-markdown td {
+  border: 1px solid #e5e7eb;
+  padding: 0.25rem 0.5rem;
+}
+.chat-markdown th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.chat-markdown hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 0.75rem 0;
+}
