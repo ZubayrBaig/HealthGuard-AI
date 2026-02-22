@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import axios from 'axios';
+import api, { getAuthToken } from '../utils/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -227,7 +227,7 @@ export default function Chat() {
   useEffect(() => {
     async function fetchPatient() {
       try {
-        const { data: patients } = await axios.get('/api/patients');
+        const { data: patients } = await api.get('/api/patients');
         if (patients.length) {
           setPatientId(patients[0].id);
           setPatientName(patients[0].name);
@@ -244,7 +244,7 @@ export default function Chat() {
     if (!patientId) return;
     try {
       if (!prepend) setLoadingHistory(true);
-      const { data } = await axios.get(
+      const { data } = await api.get(
         `/api/chat/${patientId}/history?page=${page}&limit=50`,
       );
       if (prepend) {
@@ -264,6 +264,19 @@ export default function Chat() {
   useEffect(() => {
     if (patientId) fetchHistory(1);
   }, [patientId, fetchHistory]);
+
+  // Demo prefill listener
+  useEffect(() => {
+    function handlePrefill(e) {
+      setInput(e.detail);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+      }
+    }
+    window.addEventListener('demo-prefill-chat', handlePrefill);
+    return () => window.removeEventListener('demo-prefill-chat', handlePrefill);
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -298,9 +311,13 @@ export default function Chat() {
     abortRef.current = controller;
 
     try {
+      const token = await getAuthToken();
       const response = await fetch(`/api/chat/${patientId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ message: messageText }),
         signal: controller.signal,
       });
@@ -361,7 +378,7 @@ export default function Chat() {
     if (!patientId) return;
     setShowClearConfirm(false);
     try {
-      await axios.delete(`/api/chat/${patientId}/history`);
+      await api.delete(`/api/chat/${patientId}/history`);
       setMessages([]);
       setHasOlderMessages(false);
       setCurrentPage(1);

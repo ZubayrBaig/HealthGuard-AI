@@ -318,3 +318,24 @@ Analyze these vitals in the context of the patient's conditions and medications.
     return AI_FALLBACK;
   }
 }
+
+// ---------------------------------------------------------------------------
+// AI prediction cache (in-memory, 5-minute TTL)
+// ---------------------------------------------------------------------------
+
+const AI_CACHE = new Map();
+const AI_CACHE_TTL = 5 * 60 * 1000;
+
+export function getCachedPrediction(patientId) {
+  const entry = AI_CACHE.get(patientId);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > AI_CACHE_TTL) {
+    AI_CACHE.delete(patientId);
+    return null;
+  }
+  return entry;
+}
+
+export function setCachedPrediction(patientId, result) {
+  AI_CACHE.set(patientId, { result, timestamp: Date.now() });
+}

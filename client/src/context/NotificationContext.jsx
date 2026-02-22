@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { io as socketIO } from 'socket.io-client';
-import axios from 'axios';
+import api from '../utils/api';
 import NotificationToast from '../components/NotificationToast';
 
 const NotificationContext = createContext(null);
@@ -8,20 +8,29 @@ const NotificationContext = createContext(null);
 const MAX_TOASTS = 3;
 const AUTO_DISMISS_MS = 5000;
 
-export function NotificationProvider({ children }) {
-  const [patientId, setPatientId] = useState(null);
-  const [patientName, setPatientName] = useState(null);
+export function NotificationProvider({ children, patient: linkedPatient }) {
+  const [patientId, setPatientId] = useState(linkedPatient?.id || null);
+  const [patientName, setPatientName] = useState(linkedPatient?.name || null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasCritical, setHasCritical] = useState(false);
   const [toasts, setToasts] = useState([]);
   const socketRef = useRef(null);
   const timersRef = useRef(new Map());
 
-  // Fetch patient ID on mount
+  // Update from linked patient prop (auth mode)
   useEffect(() => {
+    if (linkedPatient) {
+      setPatientId(linkedPatient.id);
+      setPatientName(linkedPatient.name);
+    }
+  }, [linkedPatient]);
+
+  // Fallback: fetch patient from API (demo mode)
+  useEffect(() => {
+    if (linkedPatient) return;
     async function init() {
       try {
-        const { data: patients } = await axios.get('/api/patients');
+        const { data: patients } = await api.get('/api/patients');
         if (patients.length) {
           setPatientId(patients[0].id);
           setPatientName(patients[0].name);
@@ -31,15 +40,15 @@ export function NotificationProvider({ children }) {
       }
     }
     init();
-  }, []);
+  }, [linkedPatient]);
 
   // Fetch unread count + critical flag
   const refreshUnread = useCallback(async () => {
     if (!patientId) return;
     try {
       const [countRes, criticalRes] = await Promise.all([
-        axios.get(`/api/alerts/${patientId}/unread-count`),
-        axios.get(`/api/alerts/${patientId}?type=critical&acknowledged=false&limit=1`),
+        api.get(`/api/alerts/${patientId}/unread-count`),
+        api.get(`/api/alerts/${patientId}?type=critical&acknowledged=false&limit=1`),
       ]);
       setUnreadCount(countRes.data.count);
       setHasCritical(criticalRes.data.alerts.length > 0);
@@ -99,12 +108,12 @@ export function NotificationProvider({ children }) {
   }, []);
 
   const acknowledgeAlert = useCallback(async (alertId) => {
-    const { data } = await axios.patch(`/api/alerts/${alertId}/acknowledge`);
+    const { data } = await api.patch(`/api/alerts/${alertId}/acknowledge`);
     setUnreadCount((c) => Math.max(0, c - 1));
     // Re-check critical status
     if (patientId) {
       try {
-        const res = await axios.get(
+        const res = await api.get(
           `/api/alerts/${patientId}?type=critical&acknowledged=false&limit=1`,
         );
         setHasCritical(res.data.alerts.length > 0);

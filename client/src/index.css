@@ -23,6 +23,33 @@
   animation: page-fade-in 0.25s ease-out;
 }
 
+@keyframes section-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@utility animate-section-in {
+  animation: section-fade-in 0.4s ease-out;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@utility animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes demo-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.25); }
+}
+.demo-pulse {
+  animation: demo-pulse 0.8s ease-in-out 2;
+  border-radius: inherit;
+}
+
 /* Markdown styles for chat assistant messages */
 .chat-markdown h1,
 .chat-markdown h2,

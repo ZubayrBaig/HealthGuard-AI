@@ -1,4 +1,5 @@
-import { Sparkles, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
+import { Sparkles, AlertTriangle, Clock, CheckCircle2, RefreshCw } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 const LIKELIHOOD_STYLES = {
   high: 'bg-red-100 text-red-700',
@@ -12,7 +13,7 @@ const CONFIDENCE_STYLES = {
   low: 'bg-gray-100 text-gray-500',
 };
 
-export default function AIInsightsCard({ aiPrediction, loading }) {
+export default function AIInsightsCard({ aiPrediction, loading, analyzedAt, onRefresh, cached }) {
   const predictions = aiPrediction?.predictions || [];
   const recommendations = aiPrediction?.recommendations || [];
   const confidence = aiPrediction?.confidence || 'low';
@@ -35,12 +36,13 @@ export default function AIInsightsCard({ aiPrediction, loading }) {
         )}
       </div>
 
-      {/* Loading state */}
+      {/* Loading state — shimmer animation */}
       {loading && (
         <div className="space-y-3">
-          <div className="h-4 bg-gray-100 rounded animate-pulse w-3/4" />
-          <div className="h-4 bg-gray-100 rounded animate-pulse w-full" />
-          <div className="h-4 bg-gray-100 rounded animate-pulse w-2/3" />
+          <div className="h-4 rounded animate-shimmer w-3/4" />
+          <div className="h-4 rounded animate-shimmer w-full" />
+          <div className="h-4 rounded animate-shimmer w-2/3" />
+          <p className="text-xs text-gray-400 mt-3 text-center">AI is analyzing your health data...</p>
         </div>
       )}
 
@@ -53,51 +55,71 @@ export default function AIInsightsCard({ aiPrediction, loading }) {
 
       {/* Content */}
       {!loading && hasMeaningfulData && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Predictions */}
-          {predictions.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-500 mb-3">Potential Risks</h4>
-              <div className="space-y-2.5">
-                {predictions.map((pred, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2.5 p-3 rounded-lg bg-gray-50"
-                  >
-                    <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-700 leading-snug">{pred.risk}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                          <Clock className="h-3 w-3" />
-                          {pred.timeframe}
-                        </span>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${LIKELIHOOD_STYLES[pred.likelihood] || LIKELIHOOD_STYLES.low}`}>
-                          {pred.likelihood}
-                        </span>
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Predictions */}
+            {predictions.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 mb-3">Potential Risks</h4>
+                <div className="space-y-2.5">
+                  {predictions.map((pred, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2.5 p-3 rounded-lg bg-gray-50"
+                    >
+                      <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 leading-snug">{pred.risk}</p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                            <Clock className="h-3 w-3" />
+                            {pred.timeframe}
+                          </span>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${LIKELIHOOD_STYLES[pred.likelihood] || LIKELIHOOD_STYLES.low}`}>
+                            {pred.likelihood}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Recommendations */}
-          {recommendations.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-500 mb-3">Recommendations</h4>
-              <div className="space-y-2 border-l-2 border-blue-200 pl-3">
-                {recommendations.map((rec, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-700 leading-snug">{rec}</p>
-                  </div>
-                ))}
+            {/* Recommendations */}
+            {recommendations.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 mb-3">Recommendations</h4>
+                <div className="space-y-2 border-l-2 border-blue-200 pl-3">
+                  {recommendations.map((rec, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-gray-700 leading-snug">{rec}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+
+          {/* Footer — last analyzed + refresh */}
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-400">
+              {analyzedAt
+                ? `Last analyzed ${formatDistanceToNow(new Date(analyzedAt), { addSuffix: true })}`
+                : 'Recently analyzed'}
+            </span>
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Refresh Analysis
+              </button>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

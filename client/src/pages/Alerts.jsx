@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import {
   AlertTriangle,
   AlertCircle,
@@ -219,7 +219,7 @@ export default function Alerts() {
   useEffect(() => {
     async function fetchPatient() {
       try {
-        const { data: patients } = await axios.get('/api/patients');
+        const { data: patients } = await api.get('/api/patients');
         if (patients.length) setPatientId(patients[0].id);
       } catch {
         // Silent fail
@@ -239,7 +239,7 @@ export default function Alerts() {
       if (activeFilter !== 'all') params.set('type', activeFilter);
       if (!showAcknowledged) params.set('acknowledged', 'false');
 
-      const { data } = await axios.get(
+      const { data } = await api.get(
         `/api/alerts/${patientId}?${params.toString()}`,
       );
       setAlerts(data.alerts);

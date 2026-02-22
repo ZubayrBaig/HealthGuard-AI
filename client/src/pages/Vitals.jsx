@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import {
   Heart,
   Activity,
@@ -69,7 +69,7 @@ export default function Vitals() {
     let cancelled = false;
     async function loadPatient() {
       try {
-        const { data: patients } = await axios.get('/api/patients');
+        const { data: patients } = await api.get('/api/patients');
         if (!patients.length) {
           setError('No patients found');
           setLoading(false);
@@ -94,9 +94,9 @@ export default function Vitals() {
       setLoading(true);
       setError(null);
       const [vitalsRes, summaryRes, latestRes] = await Promise.all([
-        axios.get(`/api/vitals/${patientId}?range=${range}`),
-        axios.get(`/api/vitals/${patientId}/summary?range=${range}`),
-        axios.get(`/api/vitals/${patientId}/latest`),
+        api.get(`/api/vitals/${patientId}?range=${range}`),
+        api.get(`/api/vitals/${patientId}/summary?range=${range}`),
+        api.get(`/api/vitals/${patientId}/latest`),
       ]);
       setVitalsData(vitalsRes.data);
       setSummary(summaryRes.data.summary);

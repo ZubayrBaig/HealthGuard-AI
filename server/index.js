@@ -23,6 +23,8 @@ import createAlertsRouter from './routes/alerts.js';
 import createRiskRouter from './routes/risk.js';
 import createDemoRouter from './routes/demo.js';
 import createChatRouter from './routes/chat.js';
+import createAuthRouter from './routes/auth.js';
+import { requireAuth, extractUser } from './middleware/auth.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -55,12 +57,20 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Routes
+// Demo routes — no auth required (mounted before auth middleware)
+app.use('/api/demo', createDemoRouter(io));
+
+// Auth middleware — protects all subsequent /api/* routes
+app.use('/api', requireAuth, extractUser);
+
+// Auth routes
+app.use('/api/auth', createAuthRouter());
+
+// Protected routes
 app.use('/api/patients', createPatientsRouter());
 app.use('/api/alerts', createAlertsRouter());
 app.use('/api/vitals', createVitalsRouter(io));
 app.use('/api/risk', createRiskRouter());
-app.use('/api/demo', createDemoRouter(io));
 app.use('/api/chat', createChatRouter());
 
 // Socket.io

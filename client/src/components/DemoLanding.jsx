@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { HeartPulse, Play, Loader2, Shield, Activity, MessageCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 export default function DemoLanding({ onStart }) {
   const [loading, setLoading] = useState(false);
@@ -10,7 +10,7 @@ export default function DemoLanding({ onStart }) {
     try {
       setLoading(true);
       setError(null);
-      await axios.post('/api/demo/seed');
+      await api.post('/api/demo/seed');
       onStart();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to set up demo');

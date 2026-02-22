@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Check, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const FIELDS = [
   { key: 'heart_rate', label: 'Heart Rate (BPM)', min: 30, max: 220, step: 1, placeholder: 'e.g. 72' },
@@ -50,7 +50,7 @@ export default function LogVitalsModal({ isOpen, onClose, patientId, onSuccess }
     try {
       setSubmitting(true);
       setError(null);
-      await axios.post(`/api/vitals/${patientId}`, payload);
+      await api.post(`/api/vitals/${patientId}`, payload);
       setSuccess(true);
       setTimeout(() => {
         setValues(INITIAL_VALUES);

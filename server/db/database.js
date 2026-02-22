@@ -81,5 +81,7 @@ try { db.exec('ALTER TABLE alerts ADD COLUMN ai_message TEXT'); } catch {}
 try { db.exec('ALTER TABLE alerts ADD COLUMN emergency_context TEXT'); } catch {}
 try { db.exec("ALTER TABLE patients ADD COLUMN alert_preferences TEXT NOT NULL DEFAULT '{\"critical\":true,\"warning\":true,\"info\":true}'"); } catch {}
 try { db.exec("ALTER TABLE patients ADD COLUMN normal_ranges TEXT NOT NULL DEFAULT '{}'"); } catch {}
+try { db.exec('ALTER TABLE patients ADD COLUMN auth0_sub TEXT'); } catch {}
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_auth0_sub ON patients(auth0_sub) WHERE auth0_sub IS NOT NULL');
 
 export default db;

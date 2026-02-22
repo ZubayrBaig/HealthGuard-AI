@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import { differenceInYears, parseISO } from 'date-fns';
 import {
   User, Stethoscope, Pill, Phone, Bell, SlidersHorizontal,
@@ -78,11 +78,11 @@ export default function Profile() {
   const fetchPatient = useCallback(async () => {
     try {
       setLoading(true);
-      const { data: patients } = await axios.get('/api/patients');
+      const { data: patients } = await api.get('/api/patients');
       if (!patients.length) return;
       const id = patients[0].id;
       setPatientId(id);
-      const { data } = await axios.get(`/api/patients/${id}`);
+      const { data } = await api.get(`/api/patients/${id}`);
       setForm({
         name: data.name || '',
         date_of_birth: data.date_of_birth || '',
@@ -115,7 +115,7 @@ export default function Profile() {
     setSaving(true);
     setSaveStatus('');
     try {
-      const { data } = await axios.put(`/api/patients/${patientId}`, form);
+      const { data } = await api.put(`/api/patients/${patientId}`, form);
       setForm({
         name: data.name || '',
         date_of_birth: data.date_of_birth || '',
