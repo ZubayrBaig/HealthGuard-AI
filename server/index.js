@@ -8,10 +8,9 @@ const __dirname = dirname(__filename);
 
 dotenv.config({ path: join(__dirname, '..', '.env') });
 
-import { initDb, seedDb } from './db/schema.js';
+import { initDb } from './db/schema.js';
 
 initDb();
-seedDb();
 
 import express from 'express';
 import { createServer } from 'http';
