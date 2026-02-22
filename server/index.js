@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,19 +29,22 @@ import { requireAuth, extractUser } from './middleware/auth.js';
 
 const app = express();
 const httpServer = createServer(app);
+
+const isProduction = process.env.NODE_ENV === 'production';
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+
 const io = new Server(httpServer, {
-  cors: {
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST'],
-  },
+  cors: isProduction
+    ? undefined
+    : { origin: CLIENT_ORIGIN, methods: ['GET', 'POST'] },
 });
 
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors({
-  origin: 'http://localhost:5173',
-}));
+// Middleware — only need CORS in dev (production serves from same origin)
+if (!isProduction) {
+  app.use(cors({ origin: CLIENT_ORIGIN }));
+}
 app.use(express.json());
 
 // Rate limiting
@@ -72,6 +76,16 @@ app.use('/api/alerts', createAlertsRouter());
 app.use('/api/vitals', createVitalsRouter(io));
 app.use('/api/risk', createRiskRouter());
 app.use('/api/chat', createChatRouter());
+
+// Serve client build in production
+const clientDist = join(__dirname, '..', 'client', 'dist');
+if (isProduction && existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // SPA fallback — serve index.html for any non-API route
+  app.get('*', (req, res) => {
+    res.sendFile(join(clientDist, 'index.html'));
+  });
+}
 
 // Socket.io
 io.on('connection', (socket) => {
