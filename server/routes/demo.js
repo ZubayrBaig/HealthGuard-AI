@@ -156,11 +156,12 @@ const SPIKE_PRESETS = {
 export default function createDemoRouter(io) {
   const router = Router();
 
-  // POST /api/demo/seed — seed demo data if database is empty
+  // POST /api/demo/seed — seed demo data if database is empty, or return existing patient
   router.post('/seed', (req, res) => {
     const { count } = stmts().patientCount.get();
     if (count > 0) {
-      return res.status(400).json({ error: 'Database already has patient data' });
+      const patient = stmts().firstPatient.get();
+      return res.json({ message: 'Using existing patient data', patient });
     }
     seedDb();
     const patient = stmts().firstPatient.get();
