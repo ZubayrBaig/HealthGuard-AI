@@ -10,6 +10,8 @@ import {
   Footprints,
   Plus,
   RefreshCw,
+  Loader2,
+  Check,
 } from 'lucide-react';
 import VitalDetailChart from '../components/VitalDetailChart';
 import LogVitalsModal from '../components/LogVitalsModal';
@@ -25,6 +27,16 @@ const VITAL_TABS = [
   { key: 'sleep_hours', label: 'Sleep', unit: 'hrs', color: '#6366f1', icon: Moon, normalMin: 7, normalMax: 9 },
   { key: 'steps', label: 'Steps', unit: 'steps', color: '#14b8a6', icon: Footprints, normalMin: 7000, normalMax: 10000 },
 ];
+
+const QUICK_LOG_CONFIG = {
+  heart_rate:        { min: 30,  max: 220,    step: 1,   placeholder: 'e.g. 72' },
+  blood_pressure:    { min: 60,  max: 250,    step: 1,   placeholderSys: 'Sys', placeholderDia: 'Dia' },
+  glucose:           { min: 20,  max: 500,    step: 0.1, placeholder: 'e.g. 110' },
+  oxygen_saturation: { min: 50,  max: 100,    step: 0.1, placeholder: 'e.g. 98' },
+  temperature:       { min: 90,  max: 110,    step: 0.1, placeholder: 'e.g. 98.6' },
+  sleep_hours:       { min: 0,   max: 24,     step: 0.1, placeholder: 'e.g. 7.5' },
+  steps:             { min: 0,   max: 100000, step: 1,   placeholder: 'e.g. 8000' },
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -63,6 +75,10 @@ export default function Vitals() {
   const [summary, setSummary] = useState(null);
   const [latestVitals, setLatestVitals] = useState(null);
   const [showLogModal, setShowLogModal] = useState(false);
+  const [quickValue, setQuickValue] = useState('');
+  const [quickValueDia, setQuickValueDia] = useState('');
+  const [quickSubmitting, setQuickSubmitting] = useState(false);
+  const [quickSuccess, setQuickSuccess] = useState(false);
 
   // Fetch patient ID on mount
   useEffect(() => {
@@ -111,6 +127,35 @@ export default function Vitals() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleQuickLog = useCallback(async () => {
+    if (!patientId || quickValue === '') return;
+    const payload = { source: 'manual' };
+
+    if (activeTab === 'blood_pressure') {
+      if (quickValueDia === '') return;
+      payload.blood_pressure_systolic = Number(quickValue);
+      payload.blood_pressure_diastolic = Number(quickValueDia);
+    } else {
+      payload[activeTab] = Number(quickValue);
+    }
+
+    setQuickSubmitting(true);
+    try {
+      await api.post(`/api/vitals/${patientId}`, payload);
+      setQuickSuccess(true);
+      setTimeout(() => {
+        setQuickValue('');
+        setQuickValueDia('');
+        setQuickSuccess(false);
+        fetchData();
+      }, 600);
+    } catch {
+      // silent
+    } finally {
+      setQuickSubmitting(false);
+    }
+  }, [patientId, activeTab, quickValue, quickValueDia, fetchData]);
 
   const activeConfig = VITAL_TABS.find((t) => t.key === activeTab);
   const summaryKey = getSummaryKey(activeConfig);
@@ -172,7 +217,7 @@ export default function Vitals() {
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); setQuickValue(''); setQuickValueDia(''); setQuickSuccess(false); }}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border ${
                 isActive
                   ? 'text-white border-transparent'
@@ -253,6 +298,78 @@ export default function Vitals() {
           )}
         </div>
       )}
+
+      {/* Quick log */}
+      {!loading && patientId && (() => {
+        const Icon = activeConfig.icon;
+        const qc = QUICK_LOG_CONFIG[activeTab];
+        const inputClass = 'px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-400';
+        return (
+          <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-200 px-4 py-3">
+            <Icon className="h-5 w-5 flex-shrink-0" style={{ color: activeConfig.color }} />
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Log {activeConfig.label}
+            </span>
+            {activeTab === 'blood_pressure' ? (
+              <>
+                <input
+                  type="number"
+                  placeholder={qc.placeholderSys}
+                  value={quickValue}
+                  onChange={(e) => setQuickValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleQuickLog(); }}
+                  min={60}
+                  max={250}
+                  step={1}
+                  className={`w-20 ${inputClass}`}
+                />
+                <span className="text-gray-400 text-sm">/</span>
+                <input
+                  type="number"
+                  placeholder={qc.placeholderDia}
+                  value={quickValueDia}
+                  onChange={(e) => setQuickValueDia(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleQuickLog(); }}
+                  min={30}
+                  max={150}
+                  step={1}
+                  className={`w-20 ${inputClass}`}
+                />
+              </>
+            ) : (
+              <input
+                type="number"
+                placeholder={qc.placeholder}
+                value={quickValue}
+                onChange={(e) => setQuickValue(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleQuickLog(); }}
+                min={qc.min}
+                max={qc.max}
+                step={qc.step}
+                className={`w-28 ${inputClass}`}
+              />
+            )}
+            <span className="text-xs text-gray-500">{activeConfig.unit}</span>
+            <button
+              onClick={handleQuickLog}
+              disabled={quickSubmitting || quickSuccess || quickValue === '' || (activeTab === 'blood_pressure' && quickValueDia === '')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                quickSuccess
+                  ? 'bg-green-500 text-white'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {quickSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : quickSuccess ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                'Log'
+              )}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Chart */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">

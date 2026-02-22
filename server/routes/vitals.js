@@ -216,18 +216,22 @@ export default function createVitalsRouter(io) {
     const timestamp = body.timestamp || new Date().toISOString().replace('T', ' ').slice(0, 19);
     const source = body.source || 'manual';
 
+    // Carry forward previous values for fields not included in this request,
+    // so logging a single vital doesn't reset the others to null.
+    const prev = latestVitalStmt.get(patientId);
+
     const reading = {
       id,
       patient_id: patientId,
       timestamp,
-      heart_rate: body.heart_rate ?? null,
-      blood_pressure_systolic: body.blood_pressure_systolic ?? null,
-      blood_pressure_diastolic: body.blood_pressure_diastolic ?? null,
-      glucose: body.glucose ?? null,
-      oxygen_saturation: body.oxygen_saturation ?? null,
-      temperature: body.temperature ?? null,
-      sleep_hours: body.sleep_hours ?? null,
-      steps: body.steps ?? null,
+      heart_rate: body.heart_rate ?? prev?.heart_rate ?? null,
+      blood_pressure_systolic: body.blood_pressure_systolic ?? prev?.blood_pressure_systolic ?? null,
+      blood_pressure_diastolic: body.blood_pressure_diastolic ?? prev?.blood_pressure_diastolic ?? null,
+      glucose: body.glucose ?? prev?.glucose ?? null,
+      oxygen_saturation: body.oxygen_saturation ?? prev?.oxygen_saturation ?? null,
+      temperature: body.temperature ?? prev?.temperature ?? null,
+      sleep_hours: body.sleep_hours ?? prev?.sleep_hours ?? null,
+      steps: body.steps ?? prev?.steps ?? null,
       source,
     };
 
