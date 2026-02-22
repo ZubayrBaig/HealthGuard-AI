@@ -3,13 +3,17 @@ import jwt from 'jsonwebtoken';
 
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
 const AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE;
+const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID;
 
-export const isAuthConfigured = Boolean(AUTH0_DOMAIN && AUTH0_AUDIENCE);
+// Auth is configured if we have a domain AND either an API audience or a client ID.
+// When no audience is set, the client sends the ID token (aud = client ID) instead of
+// an access token, so we validate against the client ID.
+export const isAuthConfigured = Boolean(AUTH0_DOMAIN && (AUTH0_AUDIENCE || AUTH0_CLIENT_ID));
 
 let jwtCheck = null;
 if (isAuthConfigured) {
   jwtCheck = auth({
-    audience: AUTH0_AUDIENCE,
+    audience: AUTH0_AUDIENCE || AUTH0_CLIENT_ID,
     issuerBaseURL: `https://${AUTH0_DOMAIN}/`,
     tokenSigningAlg: 'RS256',
   });

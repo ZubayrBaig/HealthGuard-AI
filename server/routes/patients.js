@@ -64,6 +64,9 @@ export default function createPatientsRouter() {
     const allowedFields = [
       'name', 'date_of_birth',
       'emergency_contact_name', 'emergency_contact_phone',
+      'gender', 'height_inches', 'weight_lbs', 'blood_type',
+      'primary_care_provider', 'provider_phone', 'provider_clinic',
+      'pharmacy_name', 'pharmacy_address', 'pharmacy_phone',
     ];
     const jsonFields = ['conditions', 'medications', 'alert_preferences', 'normal_ranges'];
 

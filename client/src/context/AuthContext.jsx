@@ -23,6 +23,7 @@ function InnerAuthProvider({ children }) {
     loginWithRedirect,
     logout,
     getAccessTokenSilently,
+    getIdTokenClaims,
   } = useAuth0();
 
   const [patient, setPatient] = useState(null);
@@ -31,14 +32,23 @@ function InnerAuthProvider({ children }) {
     () => localStorage.getItem('healthguard_demo_mode') === 'true',
   );
 
-  // Wire the token getter into the axios interceptor
+  // Wire the token getter into the axios interceptor.
+  // When an API audience is configured, use the access token.
+  // Otherwise fall back to the raw ID token (always a JWT with aud = client ID).
   useEffect(() => {
     if (isAuthenticated) {
-      setAccessTokenGetter(() =>
-        getAccessTokenSilently({ authorizationParams: { audience: AUTH0_AUDIENCE } }),
-      );
+      if (AUTH0_AUDIENCE) {
+        setAccessTokenGetter(() =>
+          getAccessTokenSilently({ authorizationParams: { audience: AUTH0_AUDIENCE } }),
+        );
+      } else {
+        setAccessTokenGetter(async () => {
+          const claims = await getIdTokenClaims();
+          return claims?.__raw;
+        });
+      }
     }
-  }, [isAuthenticated, getAccessTokenSilently]);
+  }, [isAuthenticated, getAccessTokenSilently, getIdTokenClaims]);
 
   // Link patient after successful Auth0 login
   useEffect(() => {
@@ -130,7 +140,7 @@ export function AuthProvider({ children }) {
       clientId={AUTH0_CLIENT_ID}
       authorizationParams={{
         redirect_uri: window.location.origin,
-        audience: AUTH0_AUDIENCE,
+        ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
       }}
       onRedirectCallback={(appState) => {
         navigate(appState?.returnTo || '/dashboard');
