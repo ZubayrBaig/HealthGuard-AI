@@ -231,9 +231,11 @@ export default function Chat() {
         if (patients.length) {
           setPatientId(patients[0].id);
           setPatientName(patients[0].name);
+        } else {
+          setLoadingHistory(false);
         }
       } catch {
-        // Silent fail
+        setLoadingHistory(false);
       }
     }
     fetchPatient();

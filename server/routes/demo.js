@@ -233,7 +233,7 @@ export default function createDemoRouter(io) {
         setTimeout(() => {
           const ts = nowTimestamp();
           for (const { deviceId, deviceType, config } of deviceIds) {
-            stmts().updateDeviceStatus.run(ts, ts, ts, deviceId);
+            stmts().updateDeviceStatus.run('connected', ts, ts, deviceId);
             io.emit('device-status-change', {
               deviceId,
               patientId: patient.id,

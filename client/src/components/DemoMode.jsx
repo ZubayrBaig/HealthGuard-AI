@@ -127,14 +127,14 @@ export default function DemoMode() {
     }
 
     if (stepIndex === 6) {
-      // Step 7: prefill chat input after navigation settles
+      // Step 7: prefill chat input after navigation settles and component mounts
       setTimeout(() => {
         window.dispatchEvent(
           new CustomEvent('demo-prefill-chat', {
             detail: 'My glucose just spiked to 245. What should I do?',
           }),
         );
-      }, 600);
+      }, 1200);
     }
 
     // Pulse target element
