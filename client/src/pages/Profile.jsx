@@ -3,7 +3,7 @@ import api from '../utils/api';
 import { differenceInYears, parseISO } from 'date-fns';
 import {
   User, Stethoscope, Pill, Phone, Bell, SlidersHorizontal,
-  Save, Loader2, Plus, X, Check, Building2, MapPin,
+  Save, Loader2, Plus, X, Check,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -18,9 +18,6 @@ const VITAL_CONFIGS = [
   { key: 'oxygen_saturation', label: 'SpO2', unit: '%', defaultMin: 95, defaultMax: null },
   { key: 'temperature', label: 'Temperature', unit: '°F', defaultMin: 97.0, defaultMax: 99.5 },
 ];
-
-const GENDER_OPTIONS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
-const BLOOD_TYPE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'];
 
 const ALERT_TYPES = [
   { key: 'critical', label: 'Critical alerts', desc: 'Life-threatening vital readings', color: 'red' },
@@ -89,20 +86,10 @@ export default function Profile() {
       setForm({
         name: data.name || '',
         date_of_birth: data.date_of_birth || '',
-        gender: data.gender || '',
-        height_inches: data.height_inches ?? '',
-        weight_lbs: data.weight_lbs ?? '',
-        blood_type: data.blood_type || '',
         conditions: data.conditions || [],
         medications: data.medications || [],
         emergency_contact_name: data.emergency_contact_name || '',
         emergency_contact_phone: data.emergency_contact_phone || '',
-        primary_care_provider: data.primary_care_provider || '',
-        provider_phone: data.provider_phone || '',
-        provider_clinic: data.provider_clinic || '',
-        pharmacy_name: data.pharmacy_name || '',
-        pharmacy_address: data.pharmacy_address || '',
-        pharmacy_phone: data.pharmacy_phone || '',
         alert_preferences: data.alert_preferences || { critical: true, warning: true, info: true },
         normal_ranges: data.normal_ranges || {},
       });
@@ -132,20 +119,10 @@ export default function Profile() {
       setForm({
         name: data.name || '',
         date_of_birth: data.date_of_birth || '',
-        gender: data.gender || '',
-        height_inches: data.height_inches ?? '',
-        weight_lbs: data.weight_lbs ?? '',
-        blood_type: data.blood_type || '',
         conditions: data.conditions || [],
         medications: data.medications || [],
         emergency_contact_name: data.emergency_contact_name || '',
         emergency_contact_phone: data.emergency_contact_phone || '',
-        primary_care_provider: data.primary_care_provider || '',
-        provider_phone: data.provider_phone || '',
-        provider_clinic: data.provider_clinic || '',
-        pharmacy_name: data.pharmacy_name || '',
-        pharmacy_address: data.pharmacy_address || '',
-        pharmacy_phone: data.pharmacy_phone || '',
         alert_preferences: data.alert_preferences || { critical: true, warning: true, info: true },
         normal_ranges: data.normal_ranges || {},
       });
@@ -279,80 +256,6 @@ export default function Profile() {
               )}
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-            <select
-              value={form.gender}
-              onChange={(e) => updateField('gender', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select...</option>
-              {GENDER_OPTIONS.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Height</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={0}
-                max={8}
-                step={1}
-                value={form.height_inches ? Math.floor(form.height_inches / 12) : ''}
-                onChange={(e) => {
-                  const ft = e.target.value === '' ? 0 : Number(e.target.value);
-                  const currentIn = form.height_inches ? form.height_inches % 12 : 0;
-                  updateField('height_inches', ft * 12 + currentIn || '');
-                }}
-                placeholder="ft"
-                className="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <span className="text-sm text-gray-500">ft</span>
-              <input
-                type="number"
-                min={0}
-                max={11}
-                step={1}
-                value={form.height_inches ? Math.round(form.height_inches % 12) : ''}
-                onChange={(e) => {
-                  const inches = e.target.value === '' ? 0 : Number(e.target.value);
-                  const currentFt = form.height_inches ? Math.floor(form.height_inches / 12) : 0;
-                  updateField('height_inches', currentFt * 12 + inches || '');
-                }}
-                placeholder="in"
-                className="w-16 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <span className="text-sm text-gray-500">in</span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Weight (lbs)</label>
-            <input
-              type="number"
-              min={0}
-              max={1000}
-              step={0.1}
-              value={form.weight_lbs}
-              onChange={(e) => updateField('weight_lbs', e.target.value === '' ? '' : Number(e.target.value))}
-              placeholder="e.g. 165"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Blood Type</label>
-            <select
-              value={form.blood_type}
-              onChange={(e) => updateField('blood_type', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select...</option>
-              {BLOOD_TYPE_OPTIONS.map((bt) => (
-                <option key={bt} value={bt}>{bt}</option>
-              ))}
-            </select>
-          </div>
         </div>
       </SectionCard>
 
@@ -456,78 +359,6 @@ export default function Profile() {
               value={form.emergency_contact_phone}
               onChange={(e) => updateField('emergency_contact_phone', e.target.value)}
               placeholder="(555) 123-4567"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* Primary Care Provider */}
-      <SectionCard icon={Building2} title="Primary Care Provider">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Provider Name</label>
-            <input
-              type="text"
-              value={form.primary_care_provider}
-              onChange={(e) => updateField('primary_care_provider', e.target.value)}
-              placeholder="Dr. Jane Smith"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Clinic Name</label>
-            <input
-              type="text"
-              value={form.provider_clinic}
-              onChange={(e) => updateField('provider_clinic', e.target.value)}
-              placeholder="City Health Clinic"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-            <input
-              type="tel"
-              value={form.provider_phone}
-              onChange={(e) => updateField('provider_phone', e.target.value)}
-              placeholder="(555) 123-4567"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* Nearest Pharmacy */}
-      <SectionCard icon={MapPin} title="Nearest Pharmacy">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pharmacy Name</label>
-            <input
-              type="text"
-              value={form.pharmacy_name}
-              onChange={(e) => updateField('pharmacy_name', e.target.value)}
-              placeholder="CVS Pharmacy"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <input
-              type="text"
-              value={form.pharmacy_address}
-              onChange={(e) => updateField('pharmacy_address', e.target.value)}
-              placeholder="123 Main St, City, ST 12345"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-            <input
-              type="tel"
-              value={form.pharmacy_phone}
-              onChange={(e) => updateField('pharmacy_phone', e.target.value)}
-              placeholder="(555) 987-6543"
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>

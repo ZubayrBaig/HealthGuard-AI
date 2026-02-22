@@ -103,16 +103,4 @@ try { db.exec("ALTER TABLE patients ADD COLUMN normal_ranges TEXT NOT NULL DEFAU
 try { db.exec('ALTER TABLE patients ADD COLUMN auth0_sub TEXT'); } catch {}
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_patients_auth0_sub ON patients(auth0_sub) WHERE auth0_sub IS NOT NULL');
 
-// Profile detail columns
-try { db.exec('ALTER TABLE patients ADD COLUMN gender TEXT'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN height_inches REAL'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN weight_lbs REAL'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN blood_type TEXT'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN primary_care_provider TEXT'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN provider_phone TEXT'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN provider_clinic TEXT'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN pharmacy_name TEXT'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN pharmacy_address TEXT'); } catch {}
-try { db.exec('ALTER TABLE patients ADD COLUMN pharmacy_phone TEXT'); } catch {}
-
 export default db;
